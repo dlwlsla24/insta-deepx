@@ -1,0 +1,54 @@
+name: DeepX Card News Post
+
+on:
+  # 자동 스케줄 미사용. cron-job.org 가 workflow_dispatch 로만 트리거.
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore state (posted log + IG token)
+        uses: actions/cache@v4
+        with:
+          path: |
+            output/posted.json
+            output/ig_token.json
+          key: deepx-state-${{ github.run_id }}
+          restore-keys: |
+            deepx-state-
+
+      - name: Run card news bot
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ID: ${{ secrets.INSTAGRAM_BUSINESS_ID }}
+        run: python -m src.main
+
+      - name: Persist state (artifact backup)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepx-state
+          path: |
+            output/posted.json
+            output/ig_token.json
+          if-no-files-found: ignore

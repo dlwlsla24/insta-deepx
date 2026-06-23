@@ -1,0 +1,24 @@
+# env
+.env
+.env.local
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# output (생성 카드 + 게시 로그 + IG 토큰 캐시)
+output/*.png
+output/*.jpg
+output/posted.json
+output/ig_token.json
+
+# os
+.DS_Store
+Thumbs.db
+
+# editors
+.vscode/
+.idea/
