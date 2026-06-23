@@ -50,8 +50,9 @@ BRAND_NAME = "딥엑스 인사이트"
 BRAND_TAGLINE = "딥엑스(DeepX) 소식을 한눈에"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-# gemini-2.0-flash 는 2026-06-01 종료. 현행 무료 티어 모델 사용.
-GEMINI_TEXT_MODEL = "gemini-2.5-flash"
+# gemini-2.0-flash 는 2026-06-01 종료. flash-lite 는 무료 일일 한도(RPD)가
+# 더 크고 요약 품질엔 충분 — flash(무료 20/일)는 테스트만 몇 번 해도 금방 소진된다.
+GEMINI_TEXT_MODEL = "gemini-2.5-flash-lite"
 
 CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "").strip()
 CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY", "").strip()

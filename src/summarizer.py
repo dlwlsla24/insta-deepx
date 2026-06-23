@@ -10,14 +10,25 @@ from src.config import CONTENT_CARDS, GEMINI_API_KEY, GEMINI_TEXT_MODEL
 
 
 def _is_retryable(exc: BaseException) -> bool:
-    """503 UNAVAILABLE / 429 RESOURCE_EXHAUSTED 같은 일시적 에러만 재시도."""
-    if isinstance(exc, (APIError, ClientError)):
-        code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
-        if code is not None:
-            return code in (429, 500, 503)
-        msg = str(exc).lower()
-        return any(kw in msg for kw in ("429", "resource_exhausted", "unavailable", "503", "500"))
-    return False
+    """일시적 에러만 재시도. 500/503 과 분당(RPM) 429 는 재시도하지만,
+    일일 한도(RPD) 소진 429 는 재시도해도 회복 안 되므로 즉시 실패시킨다
+    (재시도하면 남은 quota 만 더 까먹음)."""
+    if not isinstance(exc, (APIError, ClientError)):
+        return False
+
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    msg = str(exc).lower()
+    is_429 = code == 429 or "429" in msg or "resource_exhausted" in msg
+
+    if is_429:
+        # "...RequestsPerDay..." 류는 일일 한도 → 재시도 무의미
+        compact = msg.replace(" ", "")
+        if "perday" in compact:
+            return False
+        return True  # 분당 한도 등 — 잠시 뒤 회복됨
+    if code in (500, 503):
+        return True
+    return any(kw in msg for kw in ("unavailable", "503", "500"))
 
 
 @dataclass
