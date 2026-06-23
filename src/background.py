@@ -26,8 +26,9 @@ _UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
-# 이 크기보다 작으면 로고/아이콘으로 보고 사진으로 안 씀 (짧은 변 기준)
-_MIN_IMAGE_DIM = 400
+# 이 크기보다 작으면 로고/아이콘으로 보고 사진으로 안 씀 (짧은 변 기준).
+# 300 이면 웬만한 기사 사진은 채택하고 자잘한 아이콘(100~200px)만 거른다.
+_MIN_IMAGE_DIM = 300
 
 
 # ---------------------------------------------------------------------------
@@ -229,11 +230,13 @@ def build_backgrounds(article_url: str, image: Image.Image | None) -> dict:
     """
     seed = _seed(article_url)
     if image is not None:
-        palette = dominant_palette(image)
+        # 사진을 최대한 노출: 커버뿐 아니라 본문·아웃트로 배경에도 실제 사진을 쓴다.
+        # card_composer 의 _apply_bg_light()/_apply_bg_dark() 가 블러 + 오버레이로
+        # 사진 위에서도 텍스트 가독성을 확보한다 (mesh 폴백은 사진이 없을 때만).
         return {
             "cover": image,
-            "content": generate_mesh_background(palette, seed + 7),
-            "outro": generate_mesh_background(palette, seed + 13),
+            "content": image,
+            "outro": image,
             "source": "photo",
         }
 

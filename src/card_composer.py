@@ -54,7 +54,7 @@ def _font(name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default(size=size)
 
 
-def _apply_bg_light(bg: Image.Image, white_amount: float = 0.74) -> Image.Image:
+def _apply_bg_light(bg: Image.Image, white_amount: float = 0.68) -> Image.Image:
     """본문 카드용 배경 처리: 강한 블러 + 약하게 밝게 + 흰색 오버레이.
     어두운 mesh/사진 배경을 밝은 틴트로 만들어 어두운 본문 텍스트 가독성 확보."""
     bg = bg.copy().resize((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
