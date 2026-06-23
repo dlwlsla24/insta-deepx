@@ -52,9 +52,11 @@ def run(stage: str = "full") -> int:
         print("[main] 새 기사 없음")
         return 0
 
-    posted_count = 0
+    # 게시(full)뿐 아니라 compose/upload 테스트에서도 ARTICLES_PER_RUN 만큼만
+    # 처리하고 멈춘다 (그러지 않으면 검색된 기사를 전부 요약해 Gemini 할당량을 태움).
+    processed_count = 0
     for article in articles:
-        if posted_count >= ARTICLES_PER_RUN:
+        if processed_count >= ARTICLES_PER_RUN:
             break
         print(f"[main] 처리 중: {article.title}")
 
@@ -88,6 +90,7 @@ def run(stage: str = "full") -> int:
             print("[main] STAGE=compose → 카드만 생성하고 종료")
             for p in paths:
                 print(f"  - {p}")
+            processed_count += 1
             continue
 
         urls = upload_all_to_cloudinary(paths)
@@ -96,6 +99,7 @@ def run(stage: str = "full") -> int:
 
         if stage == "upload":
             print("[main] STAGE=upload → Cloudinary 업로드까지만. 인스타 게시 스킵")
+            processed_count += 1
             continue
 
         caption = build_caption(
@@ -110,7 +114,7 @@ def run(stage: str = "full") -> int:
         print(f"[main] 게시 완료: {media_id}")
 
         mark_posted(article.url)
-        posted_count += 1
+        processed_count += 1
 
     return 0
 
