@@ -112,23 +112,25 @@ SYSTEM_PROMPT = f"""너는 AI 반도체 스타트업 **딥엑스(DeepX)** 관련
 """
 
 
+# 한 모델이 과부하(503)·일시 한도면 다음 모델로 폴백. 주력은 무료 한도 큰 flash-lite,
+# 그다음 flash. (dict.fromkeys 로 중복 제거 — 주력이 이미 flash 인 경우 대비)
+_MODEL_CHAIN = list(dict.fromkeys([GEMINI_TEXT_MODEL, "gemini-2.5-flash"]))
+
+
 @retry(
     retry=retry_if_exception(_is_retryable),
-    stop=stop_after_attempt(4),
-    wait=wait_exponential(multiplier=10, min=10, max=60),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=8, min=8, max=40),
     before_sleep=lambda rs: print(
-        f"[summarizer] Gemini API 일시 에러 (시도 {rs.attempt_number}/4), "
-        f"{rs.next_action.sleep}초 후 재시도..."
+        f"[summarizer] Gemini 일시 에러(과부하 등) — "
+        f"{rs.next_action.sleep:.0f}초 후 재시도 (시도 {rs.attempt_number}/3)..."
     ),
     reraise=True,
 )
-def summarize(title: str, body: str, source: str) -> CardCopy:
+def _generate(model: str, user_input: str):
     client = genai.Client(api_key=GEMINI_API_KEY)
-
-    user_input = f"[출처] {source}\n[제목] {title}\n[본문]\n{body}"
-
-    response = client.models.generate_content(
-        model=GEMINI_TEXT_MODEL,
+    return client.models.generate_content(
+        model=model,
         contents=user_input,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
@@ -136,6 +138,22 @@ def summarize(title: str, body: str, source: str) -> CardCopy:
             temperature=0.5,
         ),
     )
+
+
+def summarize(title: str, body: str, source: str) -> CardCopy:
+    user_input = f"[출처] {source}\n[제목] {title}\n[본문]\n{body}"
+
+    response = None
+    last_exc = None
+    for model in _MODEL_CHAIN:
+        try:
+            response = _generate(model, user_input)
+            break
+        except (APIError, ClientError) as e:
+            last_exc = e
+            print(f"[summarizer] 모델 '{model}' 실패 → 다음 모델로 폴백...")
+    if response is None:
+        raise last_exc  # 모든 모델이 실패
 
     data = json.loads(response.text)
 
