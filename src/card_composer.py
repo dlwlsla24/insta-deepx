@@ -348,8 +348,9 @@ def compose_title_card(
     source: str,
 ) -> Image.Image:
     img = background.copy().resize((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
-    # 실제 사진이 와도 텍스트가 읽히도록 가벼운 블러 + 어둡게
-    img = img.filter(ImageFilter.GaussianBlur(radius=4))
+    # 실제 사진이 와도 텍스트가 읽히도록 아주 가벼운 블러 + 어둡게
+    # (어둡게 처리가 가독성을 확보하므로 블러는 업스케일 거칢만 살짝 누그러뜨리는 정도)
+    img = img.filter(ImageFilter.GaussianBlur(radius=2))
     img = ImageEnhance.Brightness(img).enhance(0.62)
     # 상하단 그라디언트 오버레이 — 중앙 배경은 살림
     overlay = Image.new("RGBA", (IMAGE_SIZE, IMAGE_SIZE), (0, 0, 0, 0))
